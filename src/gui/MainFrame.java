@@ -3,6 +3,7 @@ package gui;
 import controller.VocabularyController;
 import db.DBManager;
 import view.VocabularyView;
+import view.StatisticsView;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,7 +24,7 @@ public class MainFrame extends JFrame {
         new VocabularyController(vocabView, DBManager.getInstance());
         tabbedPane.addTab(" Словарь", vocabView);
 
-        tabbedPane.addTab(" Статистика", createPlaceholderPanel("Статистика прогресса (в разработке)"));
+        tabbedPane.addTab("Статистика", new StatisticsView());
 
         add(tabbedPane, BorderLayout.CENTER);
 

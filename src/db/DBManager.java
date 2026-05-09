@@ -4,6 +4,7 @@ import model.GameSession;
 import model.VocabularyItem;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,6 +40,17 @@ public class DBManager {
             );
             """;
 
+        String sqlStats = """
+            CREATE TABLE IF NOT EXISTS study_statistics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                study_date TEXT UNIQUE,
+                words_added INTEGER DEFAULT 0,
+                words_edited INTEGER DEFAULT 0,
+                words_deleted INTEGER DEFAULT 0,
+                total_words INTEGER DEFAULT 0
+            );
+            """;
+
         String sqlSessions = """
             CREATE TABLE IF NOT EXISTS game_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,8 +64,56 @@ public class DBManager {
 
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(sqlVocab);
+            stmt.execute(sqlStats);
             stmt.execute(sqlSessions);
         }
+    }
+
+
+    public void recordAction(String actionType) {
+        String today = LocalDate.now().toString();
+        String sql = """
+            INSERT INTO study_statistics (study_date, words_added, words_edited, words_deleted, total_words)
+            VALUES (?, 
+                CASE WHEN ? = 'added' THEN 1 ELSE 0 END,
+                CASE WHEN ? = 'edited' THEN 1 ELSE 0 END,
+                CASE WHEN ? = 'deleted' THEN 1 ELSE 0 END,
+                (SELECT COUNT(*) FROM vocabulary))
+            ON CONFLICT(study_date) DO UPDATE SET
+                words_added = words_added + excluded.words_added,
+                words_edited = words_edited + excluded.words_edited,
+                words_deleted = words_deleted + excluded.words_deleted,
+                total_words = excluded.total_words
+            """;
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, today);
+            pstmt.setString(2, actionType);
+            pstmt.setString(3, actionType);
+            pstmt.setString(4, actionType);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Object[]> getAllStats() {
+        List<Object[]> stats = new ArrayList<>();
+        String sql = "SELECT study_date, words_added, words_edited, words_deleted, total_words FROM study_statistics ORDER BY study_date DESC";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                stats.add(new Object[]{
+                        rs.getString("study_date"),
+                        rs.getInt("words_added"),
+                        rs.getInt("words_edited"),
+                        rs.getInt("words_deleted"),
+                        rs.getInt("total_words")
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return stats;
     }
 
     private void insertTestData() {
@@ -77,6 +137,7 @@ public class DBManager {
             try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
                 if (generatedKeys.next()) {
                     word.setId(generatedKeys.getInt(1));
+                    recordAction("added");
                     return word;
                 }
             }
@@ -116,7 +177,9 @@ public class DBManager {
             pstmt.setInt(4, word.getBoxLevel());
             pstmt.setString(5, word.getNextReviewDate());
             pstmt.setInt(6, word.getId());
-            return pstmt.executeUpdate() > 0;
+            boolean success = pstmt.executeUpdate() > 0;
+            if (success) recordAction("edited");
+            return success;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -127,7 +190,9 @@ public class DBManager {
         String sql = "DELETE FROM vocabulary WHERE id=?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, id);
-            return pstmt.executeUpdate() > 0;
+            boolean success = pstmt.executeUpdate() > 0;
+            if (success) recordAction("deleted");
+            return success;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -155,7 +220,6 @@ public class DBManager {
         }
         return null;
     }
-
 
     public List<GameSession> getAllSessions() {
         return new ArrayList<>();

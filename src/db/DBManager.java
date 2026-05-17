@@ -116,6 +116,20 @@ public class DBManager {
         return stats;
     }
 
+    public void saveGameSession(GameSession session) {
+        String sql = "INSERT INTO game_sessions (session_date, duration_sec, total_words, correct, score) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, session.getSessionDate());
+            pstmt.setInt(2, 30); // длительность уровня
+            pstmt.setInt(3, session.getTotalWords());
+            pstmt.setInt(4, session.getCorrectAnswers());
+            pstmt.setInt(5, session.getCorrectAnswers() * 10); // очки
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void insertTestData() {
         if (getAllWords().isEmpty()) {
             addWord(new VocabularyItem(0, "hello", "привет", "Hello, how are you?", 1, "2025-04-22"));

@@ -134,7 +134,7 @@ public class VocabularyController {
     }
 
 
-    private String calculateNextReviewDate(int boxLevel) {
+    public String calculateNextReviewDate(int boxLevel) {
         int[] intervals = {1, 3, 7, 14, 30};
         if (boxLevel < 1) boxLevel = 1;
         if (boxLevel > 5) boxLevel = 5;

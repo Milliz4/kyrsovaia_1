@@ -1,11 +1,11 @@
 package gui;
 
 import controller.VocabularyController;
-import controller.GameController;  // ← добавлен импорт
+import controller.GameController;
 import db.DBManager;
 import view.VocabularyView;
 import view.StatisticsView;
-import view.GameView;  // ← добавлен импорт
+import view.GameView;
 
 import javax.swing.*;
 import java.awt.*;
@@ -20,28 +20,19 @@ public class MainFrame extends JFrame {
 
         JTabbedPane tabbedPane = new JTabbedPane();
 
-        // Вкладка "Уровни" - ИГРА
+        VocabularyView vocabView = new VocabularyView();
+        VocabularyController vocabController = new VocabularyController(vocabView, DBManager.getInstance());
+        tabbedPane.addTab("Словарь", vocabView);
+        vocabView.loadAllWords(DBManager.getInstance().getAllWords());
+
         GameView gameView = new GameView();
-        new GameController(gameView, DBManager.getInstance());
+        new GameController(gameView, DBManager.getInstance(), vocabController, vocabView);
         tabbedPane.addTab("Уровни", gameView);
 
-        // Вкладка "Словарь"
-        VocabularyView vocabView = new VocabularyView();
-        new VocabularyController(vocabView, DBManager.getInstance());
-        tabbedPane.addTab("Словарь", vocabView);
-
-        // Вкладка "Статистика"
         tabbedPane.addTab("Статистика", new StatisticsView());
 
         add(tabbedPane, BorderLayout.CENTER);
 
         vocabView.loadAllWords(DBManager.getInstance().getAllWords());
-    }
-
-    private JPanel createPlaceholderPanel(String text) {
-        JPanel panel = new JPanel(new BorderLayout());
-        JLabel label = new JLabel(text, SwingConstants.CENTER);
-        panel.add(label, BorderLayout.CENTER);
-        return panel;
     }
 }

@@ -8,8 +8,7 @@ public class VocabularyItem {
     private int boxLevel;
     private String nextReviewDate;
 
-    public VocabularyItem() {
-    }
+    public VocabularyItem() {}
 
     public VocabularyItem(int id, String english, String russian, String contextSentence,
                           int boxLevel, String nextReviewDate) {
@@ -26,9 +25,9 @@ public class VocabularyItem {
         this.russian = russian;
         this.contextSentence = contextSentence;
         this.boxLevel = 1;
+        this.nextReviewDate = java.time.LocalDate.now().toString();
     }
-
-
+    
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }
 
@@ -46,9 +45,4 @@ public class VocabularyItem {
 
     public String getNextReviewDate() { return nextReviewDate; }
     public void setNextReviewDate(String nextReviewDate) { this.nextReviewDate = nextReviewDate; }
-
-    @Override
-    public String toString() {
-        return english + " - " + russian;
-    }
 }

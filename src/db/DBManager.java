@@ -2,6 +2,7 @@ package db;
 
 import model.GameSession;
 import model.VocabularyItem;
+import java.time.format.DateTimeFormatter;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -233,6 +234,63 @@ public class DBManager {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public int[] getSRSStatistics() {
+        int[] stats = new int[5]; // индексы 0-4 соответствуют уровням 1-5
+        String sql = "SELECT box_level, COUNT(*) as count FROM vocabulary GROUP BY box_level";
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                int level = rs.getInt("box_level");
+                int count = rs.getInt("count");
+                if (level >= 1 && level <= 5) {
+                    stats[level - 1] = count;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return stats;
+    }
+
+    public List<VocabularyItem> getWordsForReview() {
+        List<VocabularyItem> list = new ArrayList<>();
+        String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
+        String sql = "SELECT * FROM vocabulary WHERE next_review_date <= ? ORDER BY next_review_date";
+
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, today);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new VocabularyItem(
+                            rs.getInt("id"),
+                            rs.getString("english"),
+                            rs.getString("russian"),
+                            rs.getString("context_sentence"),
+                            rs.getInt("box_level"),
+                            rs.getString("next_review_date")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public int getTotalWordsCount() {
+        String sql = "SELECT COUNT(*) FROM vocabulary";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
     }
 
     public List<GameSession> getAllSessions() {

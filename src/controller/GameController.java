@@ -4,6 +4,7 @@ import db.DBManager;
 import model.GameSession;
 import model.VocabularyItem;
 import view.GameView;
+import view.VocabularyView;
 
 import javax.swing.*;
 import java.time.LocalDate;
@@ -16,6 +17,8 @@ public class GameController {
     private final GameView view;
     private final DBManager dbManager;
     private Timer countdownTimer;
+    private final VocabularyController vocabController;
+    private final VocabularyView vocabView;
 
     private List<VocabularyItem> allWords;
     private List<List<VocabularyItem>> levels;
@@ -29,9 +32,12 @@ public class GameController {
     private static final int LEVEL_DURATION = 30;
     private static final int WORDS_PER_LEVEL = 3;
 
-    public GameController(GameView view, DBManager dbManager) {
+    public GameController(GameView view, DBManager dbManager, VocabularyController vocabController,
+                          VocabularyView vocabView) {
         this.view = view;
         this.dbManager = dbManager;
+        this.vocabController = vocabController;
+        this.vocabView = vocabView;
         registerListeners();
     }
 
@@ -60,7 +66,6 @@ public class GameController {
         for (int i = 0; i < allWords.size(); i += WORDS_PER_LEVEL) {
             levels.add(allWords.subList(i, Math.min(i + WORDS_PER_LEVEL, allWords.size())));
         }
-
         currentLevelIndex = 0;
         totalCorrect = 0;
         totalWrong = 0;
@@ -104,9 +109,7 @@ public class GameController {
         }
 
         VocabularyItem word = levels.get(currentLevelIndex).get(currentWordInLevel);
-        String context = (word.getContextSentence() != null && !word.getContextSentence().isEmpty())
-                ? word.getContextSentence()
-                : "Контекст не указан";
+        String context = (word.getContextSentence() != null && !word.getContextSentence().isEmpty()) ? word.getContextSentence() : "Контекст не указан";
 
         view.setWordDisplay(word.getEnglish(), context);
         view.clearAnswer();
@@ -114,25 +117,24 @@ public class GameController {
     }
 
     private void checkAnswer() {
-        String userAnswer = view.getUserAnswer().toLowerCase();
+        String userAnswer = view.getUserAnswer().toLowerCase().trim();
         if (userAnswer.isEmpty()) return;
 
         VocabularyItem currentWord = levels.get(currentLevelIndex).get(currentWordInLevel);
-        String correctAnswer = currentWord.getRussian().toLowerCase();
+        String correctAnswer = currentWord.getRussian().toLowerCase().trim();
 
-        boolean isCorrect = correctAnswer.equals(userAnswer) ||
-                correctAnswer.contains(userAnswer) ||
-                userAnswer.contains(correctAnswer);
+        boolean isCorrect = correctAnswer.equals(userAnswer);
 
         if (isCorrect) {
             levelCorrect++;
             totalCorrect++;
+            updateSRSLevel(currentWord, true);
         } else {
             levelWrong++;
             totalWrong++;
+            updateSRSLevel(currentWord, false);
             JOptionPane.showMessageDialog(view,
-                    "Неверно!\nПравильно: " + currentWord.getRussian(),
-                    "Ответ", JOptionPane.INFORMATION_MESSAGE);
+                    "Неверно!\nПравильно: " + currentWord.getRussian(), "Ответ", JOptionPane.ERROR_MESSAGE);
         }
 
         view.updateScore(totalCorrect, totalWrong);
@@ -177,6 +179,7 @@ public class GameController {
                 difficulty
         );
         dbManager.saveGameSession(session);
+        vocabView.loadAllWords(dbManager.getAllWords());
 
         view.showInstruction("Игра завершена. Нажмите Старт для новой сессии");
         view.setLevelInfo(0);
@@ -185,4 +188,16 @@ public class GameController {
         view.clearAnswer();
         view.enableInput(false);
     }
+
+    private void updateSRSLevel(VocabularyItem word, boolean isCorrect) {
+        int currentLevel = word.getBoxLevel();
+        int newLevel = isCorrect ? Math.min(currentLevel + 1, 5) : 1;
+
+        if (newLevel != currentLevel) {
+            word.setBoxLevel(newLevel);
+            word.setNextReviewDate(vocabController.calculateNextReviewDate(newLevel));
+            dbManager.updateWord(word);
+        }
+    }
+
 }

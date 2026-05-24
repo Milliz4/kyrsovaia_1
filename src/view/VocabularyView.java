@@ -74,6 +74,7 @@ public class VocabularyView extends JPanel {
         for (VocabularyItem word : words) {
             tableModel.addRow(toTableRow(word));
         }
+        tableModel.fireTableDataChanged();
     }
 
     private Object[] toTableRow(VocabularyItem word) {

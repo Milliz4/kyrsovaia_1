@@ -29,8 +29,12 @@ public class GameController {
     private int totalCorrect, totalWrong;
     private int timeLeft;
     private int timeUsed;
-    private static final int LEVEL_DURATION = 30;
-    private static final int WORDS_PER_LEVEL = 3;
+    private static final int MAX_WORDS_PER_LEVEL = 5;
+    private static final int TIME_PER_WORD = 10;
+
+    private int calculateLevelDuration(int wordCount) {
+        return Math.min(wordCount * TIME_PER_WORD, MAX_WORDS_PER_LEVEL * TIME_PER_WORD);
+    }
 
     public GameController(GameView view, DBManager dbManager, VocabularyController vocabController,
                           VocabularyView vocabView) {
@@ -53,22 +57,39 @@ public class GameController {
     }
 
     private void startGame() {
-        allWords = dbManager.getAllWords();
-        if (allWords.size() < WORDS_PER_LEVEL) {
+        List<VocabularyItem> wordsForReview = dbManager.getWordsForReview();
+
+        if (wordsForReview.isEmpty()) {
+            allWords = dbManager.getAllWords();
             JOptionPane.showMessageDialog(view,
-                    "Нужно минимум 3 слова для старта уровня. Добавьте слова в словарь!",
+                    "Все слова изучены! Начинаем новый круг.",
+                    "Информация", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            allWords = wordsForReview;
+        }
+
+        if (allWords.size() < 1) {
+            JOptionPane.showMessageDialog(view,
+                    "Добавьте слова в словарь!",
                     "Внимание", JOptionPane.WARNING_MESSAGE);
             return;
+        }
+        
+        totalCorrect = 0;
+        totalWrong = 0;
+        currentLevelIndex = 0;
+
+        if (view.getHistoryPanel() != null) {
+            view.getHistoryPanel().clearHistory();
+            List<Object[]> historyData = dbManager.getLevelHistory();
+            view.getHistoryPanel().loadHistoryFromDB(historyData);
         }
 
         Collections.shuffle(allWords);
         levels = new ArrayList<>();
-        for (int i = 0; i < allWords.size(); i += WORDS_PER_LEVEL) {
-            levels.add(allWords.subList(i, Math.min(i + WORDS_PER_LEVEL, allWords.size())));
+        for (int i = 0; i < allWords.size(); i += MAX_WORDS_PER_LEVEL) {
+            levels.add(allWords.subList(i, Math.min(i + MAX_WORDS_PER_LEVEL, allWords.size())));
         }
-        currentLevelIndex = 0;
-        totalCorrect = 0;
-        totalWrong = 0;
         view.showGameMode();
         startLevel();
     }
@@ -78,7 +99,9 @@ public class GameController {
         currentWordInLevel = 0;
         levelCorrect = 0;
         levelWrong = 0;
-        timeLeft = LEVEL_DURATION;
+
+        int levelDuration = calculateLevelDuration(currentLevelWords.size());
+        timeLeft = levelDuration;
         timeUsed = 0;
 
         view.setLevelInfo(currentLevelIndex + 1);
@@ -119,6 +142,9 @@ public class GameController {
     private void checkAnswer() {
         String userAnswer = view.getUserAnswer().toLowerCase().trim();
         if (userAnswer.isEmpty()) return;
+        if (currentWordInLevel >= levels.get(currentLevelIndex).size()) {
+            return;
+        }
 
         VocabularyItem currentWord = levels.get(currentLevelIndex).get(currentWordInLevel);
         String correctAnswer = currentWord.getRussian().toLowerCase().trim();
@@ -145,9 +171,40 @@ public class GameController {
     private void endLevel(boolean timeOut) {
         if (countdownTimer != null) countdownTimer.stop();
 
-        timeUsed = LEVEL_DURATION - timeLeft;
+        timeUsed = calculateLevelDuration(levels.get(currentLevelIndex).size()) - timeLeft;
         if (timeUsed < 0) timeUsed = 0;
-        if (timeUsed > LEVEL_DURATION) timeUsed = LEVEL_DURATION;
+
+        boolean isSuccess = (levelCorrect > 0 && levelWrong == 0) || (levelCorrect > levelWrong);
+        String sessionStatus = isSuccess ? "success" : "repeat";
+
+        String currentDate = java.time.LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM HH:mm"));
+        dbManager.saveLevelHistory(
+                currentLevelIndex + 1,
+                levelCorrect,
+                levelWrong,
+                timeUsed,
+                currentDate
+        );
+
+        dbManager.saveGameSession(new GameSession(
+                0,
+                LocalDate.now().format(DateTimeFormatter.ISO_DATE),
+                levelCorrect + levelWrong,
+                levelCorrect,
+                levelWrong,
+                sessionStatus
+        ));
+
+        if (view.getHistoryPanel() != null) {
+            view.getHistoryPanel().addLevelResult(
+                    currentLevelIndex + 1,
+                    levelCorrect,
+                    levelWrong,
+                    timeUsed,
+                    currentDate
+            );
+        }
+        vocabView.loadAllWords(dbManager.getAllWords());
 
         view.enableInput(false);
         view.showLevelResults(levelCorrect, levelWrong, timeUsed);
@@ -158,8 +215,32 @@ public class GameController {
         if (currentLevelIndex < levels.size()) {
             startLevel();
         } else {
-            JOptionPane.showMessageDialog(view, "Все уровни пройдены!", "Победа", JOptionPane.INFORMATION_MESSAGE);
-            finishGame();
+            int choice = JOptionPane.showConfirmDialog(view,
+                    "Все уровни пройдены!\nНачать новую сессию?",
+                    "Сессия завершена",
+                    JOptionPane.YES_NO_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            if (choice == JOptionPane.YES_OPTION) {
+                totalCorrect = 0;
+                totalWrong = 0;
+                currentLevelIndex = 0;
+
+                dbManager.clearLevelHistory();
+                if (view.getHistoryPanel() != null) {
+                    view.getHistoryPanel().clearHistory();
+                }
+
+                Collections.shuffle(allWords);
+                levels.clear();
+                for (int i = 0; i < allWords.size(); i += MAX_WORDS_PER_LEVEL) {
+                    levels.add(allWords.subList(i, Math.min(i + MAX_WORDS_PER_LEVEL, allWords.size())));
+                }
+
+                startLevel();
+            } else {
+                finishGame();
+            }
         }
     }
 
@@ -181,12 +262,27 @@ public class GameController {
         dbManager.saveGameSession(session);
         vocabView.loadAllWords(dbManager.getAllWords());
 
-        view.showInstruction("Игра завершена. Нажмите Старт для новой сессии");
-        view.setLevelInfo(0);
-        view.updateTimer(LEVEL_DURATION);
-        view.updateScore(0, 0);
-        view.clearAnswer();
-        view.enableInput(false);
+        int exitChoice = JOptionPane.showConfirmDialog(view,
+                "Игра завершена!\n" +
+                        "Всего слов: " + totalWords + "\n" +
+                        "Правильно: " + totalCorrect + "\n" +
+                        "Ошибок: " + totalWrong + "\n" +
+                        "Точность: " + String.format("%.1f", accuracy * 100) + "%\n\n" +
+                        "Выйти из приложения?",
+                "Завершение игры",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE);
+
+        if (exitChoice == JOptionPane.YES_OPTION) {
+            System.exit(0);
+        } else {
+            view.showInstruction("Игра завершена. Нажмите Старт для новой сессии");
+            view.setLevelInfo(0);
+            view.updateTimer(30);
+            view.updateScore(0, 0);
+            view.clearAnswer();
+            view.enableInput(false);
+        }
     }
 
     private void updateSRSLevel(VocabularyItem word, boolean isCorrect) {
@@ -196,8 +292,7 @@ public class GameController {
         if (newLevel != currentLevel) {
             word.setBoxLevel(newLevel);
             word.setNextReviewDate(vocabController.calculateNextReviewDate(newLevel));
-            dbManager.updateWord(word);
+            dbManager.updateWordNoStats(word);
         }
     }
-
 }

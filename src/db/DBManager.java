@@ -63,10 +63,23 @@ public class DBManager {
             );
             """;
 
+        String sqlLevelHistory = """
+        CREATE TABLE IF NOT EXISTS level_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            level_number INTEGER,
+            correct_answers INTEGER,
+            wrong_answers INTEGER,
+            time_seconds INTEGER,
+            completion_date TEXT
+        );
+        """;
+
+
         try (Statement stmt = connection.createStatement()) {
             stmt.execute(sqlVocab);
             stmt.execute(sqlStats);
             stmt.execute(sqlSessions);
+            stmt.execute(sqlLevelHistory);
         }
     }
 
@@ -121,10 +134,10 @@ public class DBManager {
         String sql = "INSERT INTO game_sessions (session_date, duration_sec, total_words, correct, score) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setString(1, session.getSessionDate());
-            pstmt.setInt(2, 30); // длительность уровня
+            pstmt.setInt(2, 30);
             pstmt.setInt(3, session.getTotalWords());
             pstmt.setInt(4, session.getCorrectAnswers());
-            pstmt.setInt(5, session.getCorrectAnswers() * 10); // очки
+            pstmt.setInt(5, session.getCorrectAnswers() * 10);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
@@ -255,6 +268,22 @@ public class DBManager {
         return stats;
     }
 
+    public boolean updateWordNoStats(VocabularyItem word) {
+        String sql = "UPDATE vocabulary SET english=?, russian=?, context_sentence=?, box_level=?, next_review_date=? WHERE id=?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, word.getEnglish());
+            pstmt.setString(2, word.getRussian());
+            pstmt.setString(3, word.getContextSentence());
+            pstmt.setInt(4, word.getBoxLevel());
+            pstmt.setString(5, word.getNextReviewDate());
+            pstmt.setInt(6, word.getId());
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public List<VocabularyItem> getWordsForReview() {
         List<VocabularyItem> list = new ArrayList<>();
         String today = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
@@ -293,7 +322,46 @@ public class DBManager {
         return 0;
     }
 
-    public List<GameSession> getAllSessions() {
-        return new ArrayList<>();
+    public void saveLevelHistory(int levelNum, int correct, int wrong, int timeSec, String date) {
+        String sql = "INSERT INTO level_history (level_number, correct_answers, wrong_answers, time_seconds, completion_date) VALUES (?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setInt(1, levelNum);
+            pstmt.setInt(2, correct);
+            pstmt.setInt(3, wrong);
+            pstmt.setInt(4, timeSec);
+            pstmt.setString(5, date);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<Object[]> getLevelHistory() {
+        List<Object[]> history = new ArrayList<>();
+        String sql = "SELECT level_number, correct_answers, wrong_answers, time_seconds || ' сек', completion_date FROM level_history ORDER BY id DESC";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                history.add(new Object[]{
+                        rs.getInt(1),
+                        rs.getInt(2),
+                        rs.getInt(3),
+                        rs.getString(4),
+                        rs.getString(5)
+                });
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return history;
+    }
+
+    public void clearLevelHistory() {
+        String sql = "DELETE FROM level_history";
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

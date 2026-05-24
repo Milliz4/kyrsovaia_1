@@ -2,6 +2,7 @@ package gui;
 
 import controller.VocabularyController;
 import controller.GameController;
+import controller.StatisticsController;
 import db.DBManager;
 import view.VocabularyView;
 import view.StatisticsView;
@@ -29,10 +30,10 @@ public class MainFrame extends JFrame {
         new GameController(gameView, DBManager.getInstance(), vocabController, vocabView);
         tabbedPane.addTab("Уровни", gameView);
 
-        tabbedPane.addTab("Статистика", new StatisticsView());
+        StatisticsView statsView = new StatisticsView();
+        new StatisticsController(statsView, DBManager.getInstance()); // <-- Создаём контроллер
+        tabbedPane.addTab("Статистика", statsView);
 
         add(tabbedPane, BorderLayout.CENTER);
-
-        vocabView.loadAllWords(DBManager.getInstance().getAllWords());
     }
 }

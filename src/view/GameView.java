@@ -21,6 +21,8 @@ public class GameView extends JPanel {
     }
 
     private void initializeComponents() {
+        LevelHistoryPanel historyPanel = new LevelHistoryPanel();
+
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
         levelLabel = new JLabel("Уровень: 0", SwingConstants.CENTER);
         levelLabel.setFont(new Font("Arial", Font.BOLD, 16));
@@ -140,7 +142,15 @@ public class GameView extends JPanel {
 
         add(topPanel, BorderLayout.NORTH);
         add(gamePanel, BorderLayout.CENTER);
+
+        add(historyPanel, BorderLayout.WEST);
+        add(topPanel, BorderLayout.NORTH);
+        add(gamePanel, BorderLayout.CENTER);
+
+        this.historyPanel = historyPanel;
     }
+    private LevelHistoryPanel historyPanel;
+    public LevelHistoryPanel getHistoryPanel() { return historyPanel; }
 
     private JPanel createStatRow(String labelText, JLabel valueLabel) {
         JPanel panel = new JPanel(new BorderLayout());

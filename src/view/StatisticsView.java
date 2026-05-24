@@ -1,10 +1,9 @@
 package view;
 
-import db.DBManager;
-
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.util.List;
 
 public class StatisticsView extends JPanel {
     private final DefaultTableModel statsModel;
@@ -21,23 +20,15 @@ public class StatisticsView extends JPanel {
 
     public StatisticsView() {
         setLayout(new BorderLayout());
-
-        JPanel srsPanel = createSRSPanel();
-        add(srsPanel, BorderLayout.NORTH);
+        add(createSRSPanel(), BorderLayout.NORTH);
 
         statsModel = new DefaultTableModel(COLUMNS, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
 
         statsTable = new JTable(statsModel);
-        statsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
         JScrollPane scrollPane = new JScrollPane(statsTable);
         scrollPane.setBorder(BorderFactory.createTitledBorder("История активности"));
-
         add(scrollPane, BorderLayout.CENTER);
 
         refreshBtn = new JButton("Обновить статистику");
@@ -45,9 +36,24 @@ public class StatisticsView extends JPanel {
         buttonPanel.add(refreshBtn);
         add(buttonPanel, BorderLayout.SOUTH);
 
-        refreshBtn.addActionListener(e -> loadStats());
-        loadStats();
     }
+
+    public void updateStatistics(int totalWords, int[] srsStats, int wordsForReview, List<Object[]> history) {
+        totalWordsLabel.setText("Всего слов: " + totalWords);
+        wordsForReviewLabel.setText("Требуют повторения: " + wordsForReview);
+
+        for (int i = 0; i < 5; i++) {
+            srsLevelLabels[i].setText(srsStats[i] + " слов");
+        }
+
+        statsModel.setRowCount(0);
+        for (Object[] row : history) {
+            statsModel.addRow(row);
+        }
+        statsModel.fireTableDataChanged();
+    }
+
+    public JButton getRefreshButton() { return refreshBtn; }
 
     private JPanel createSRSPanel() {
         JPanel panel = new JPanel();
@@ -75,7 +81,6 @@ public class StatisticsView extends JPanel {
         for (int i = 0; i < 5; i++) {
             JLabel nameLabel = new JLabel(levelNames[i] + ":");
             srsLevelLabels[i] = new JLabel("0 слов");
-
             levelsPanel.add(nameLabel);
             levelsPanel.add(srsLevelLabels[i]);
         }
@@ -83,36 +88,12 @@ public class StatisticsView extends JPanel {
         panel.add(levelsPanel);
         panel.add(Box.createVerticalStrut(10));
 
-        wordsForReviewLabel = new JLabel(" Требуют повторения: 0");
+        wordsForReviewLabel = new JLabel("Требуют повторения: 0");
         wordsForReviewLabel.setFont(new Font("Arial", Font.BOLD, 14));
         wordsForReviewLabel.setForeground(Color.RED);
         wordsForReviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.add(wordsForReviewLabel);
 
         return panel;
-    }
-
-    private void loadStats() {
-        statsModel.setRowCount(0);
-        for (Object[] row : DBManager.getInstance().getAllStats()) {
-            statsModel.addRow(row);
-        }
-
-        updateSRSStatistics();
-    }
-
-    private void updateSRSStatistics() {
-        DBManager db = DBManager.getInstance();
-
-        int totalWords = db.getTotalWordsCount();
-        totalWordsLabel.setText("Всего слов: " + totalWords);
-
-        int[] srsStats = db.getSRSStatistics();
-        for (int i = 0; i < 5; i++) {
-            srsLevelLabels[i].setText(srsStats[i] + " слов");
-        }
-
-        int wordsForReview = db.getWordsForReview().size();
-        wordsForReviewLabel.setText("Требуют повторения: " + wordsForReview);
     }
 }

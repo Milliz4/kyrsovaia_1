@@ -4,12 +4,12 @@ import controller.VocabularyController;
 import controller.GameController;
 import controller.StatisticsController;
 import db.DBManager;
+import service.ReminderService;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class MainFrame extends JFrame {
-
     public MainFrame() {
         setTitle("Английская лексика");
         setSize(1100, 700);
@@ -31,6 +31,8 @@ public class MainFrame extends JFrame {
         StatisticsView statsView = new StatisticsView();
         new StatisticsController(statsView, DBManager.getInstance());
         tabbedPane.addTab("Статистика", statsView);
+
+        tabbedPane.addTab("Справка", new HelpView());
 
         add(tabbedPane, BorderLayout.CENTER);
     }

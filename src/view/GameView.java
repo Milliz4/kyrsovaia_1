@@ -27,13 +27,13 @@ public class GameView extends JPanel {
 
         topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 10));
         levelLabel = new JLabel("Уровень: 0", SwingConstants.CENTER);
-        levelLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        levelLabel.setFont(new Font("Arial", Font.BOLD, 20));
 
         timerLabel = new JLabel("Время: 30 сек", SwingConstants.CENTER);
-        timerLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        timerLabel.setFont(new Font("Arial", Font.BOLD, 20));
 
         scoreLabel = new JLabel("0 | 0", SwingConstants.CENTER);
-        scoreLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        scoreLabel.setFont(new Font("Arial", Font.PLAIN, 18));
 
         topPanel.add(levelLabel);
         topPanel.add(timerLabel);
@@ -44,7 +44,7 @@ public class GameView extends JPanel {
         gamePanel.setBorder(BorderFactory.createEmptyBorder(30, 40, 30, 40));
 
         instructionLabel = new JLabel("Нажмите 'Старт' чтобы начать уровень!", SwingConstants.CENTER);
-        instructionLabel.setFont(new Font("Arial", Font.PLAIN, 14));
+        instructionLabel.setFont(new Font("Arial", Font.PLAIN, 20));
         instructionLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         wordLabel = new JLabel("", SwingConstants.CENTER);

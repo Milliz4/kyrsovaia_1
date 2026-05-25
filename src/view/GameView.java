@@ -9,11 +9,13 @@ public class GameView extends JPanel {
     private JLabel wordLabel, contextLabel;
     private JTextField answerField;
     private JButton startButton, submitButton, nextLevelButton, finishButton;
-    private JPanel gamePanel, resultPanel;
+    private JPanel gamePanel, resultPanel, topPanel;
+    private JPanel cardPanel;
 
     private JLabel valCorrect;
     private JLabel valWrong;
     private JLabel valTime;
+    private LevelHistoryPanel historyPanel;
 
     public GameView() {
         setLayout(new BorderLayout());
@@ -21,9 +23,9 @@ public class GameView extends JPanel {
     }
 
     private void initializeComponents() {
-        LevelHistoryPanel historyPanel = new LevelHistoryPanel();
+        historyPanel = new LevelHistoryPanel();
 
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        topPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 30, 10));
         levelLabel = new JLabel("Уровень: 0", SwingConstants.CENTER);
         levelLabel.setFont(new Font("Arial", Font.BOLD, 16));
 
@@ -90,7 +92,6 @@ public class GameView extends JPanel {
 
         resultPanel = new JPanel(new BorderLayout());
         resultPanel.setBorder(BorderFactory.createEmptyBorder(50, 100, 50, 100));
-        resultPanel.setVisible(false);
 
         JLabel resTitle = new JLabel("Уровень завершён!", SwingConstants.CENTER);
         resTitle.setFont(new Font("Arial", Font.BOLD, 24));
@@ -140,16 +141,20 @@ public class GameView extends JPanel {
         buttonsPanel.add(finishButton);
         resultPanel.add(buttonsPanel, BorderLayout.SOUTH);
 
-        add(topPanel, BorderLayout.NORTH);
-        add(gamePanel, BorderLayout.CENTER);
+        cardPanel = new JPanel(new CardLayout());
+        cardPanel.add(gamePanel, "game");
+        cardPanel.add(resultPanel, "result");
+
+        JPanel rightPanel = new JPanel(new BorderLayout());
+        rightPanel.add(topPanel, BorderLayout.NORTH);
+        rightPanel.add(cardPanel, BorderLayout.CENTER);
 
         add(historyPanel, BorderLayout.WEST);
-        add(topPanel, BorderLayout.NORTH);
-        add(gamePanel, BorderLayout.CENTER);
+        add(rightPanel, BorderLayout.CENTER);
 
-        this.historyPanel = historyPanel;
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, "game");
     }
-    private LevelHistoryPanel historyPanel;
+
     public LevelHistoryPanel getHistoryPanel() { return historyPanel; }
 
     private JPanel createStatRow(String labelText, JLabel valueLabel) {
@@ -190,61 +195,38 @@ public class GameView extends JPanel {
     }
 
     public void showGameMode() {
-        if (getComponentCount() > 0 && getComponent(1) == resultPanel) {
-            remove(resultPanel);
-        }
-        add(gamePanel, BorderLayout.CENTER);
-        gamePanel.setVisible(true);
-        resultPanel.setVisible(false);
-        revalidate(); repaint();
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, "game");
+        cardPanel.revalidate();
+        cardPanel.repaint();
     }
 
     public void showResultMode() {
-        remove(gamePanel);
-        add(resultPanel, BorderLayout.CENTER);
-        gamePanel.setVisible(false);
-        resultPanel.setVisible(true);
-        revalidate(); repaint();
+        ((CardLayout) cardPanel.getLayout()).show(cardPanel, "result");
+        cardPanel.revalidate();
+        cardPanel.repaint();
     }
 
-    public void setLevelInfo(int level) {
-        levelLabel.setText("Уровень: " + level);
-    }
-
+    public void setLevelInfo(int level) { levelLabel.setText("Уровень: " + level); }
     public void setWordDisplay(String english, String context) {
-        wordLabel.setText(english);
-        contextLabel.setText(context);
+        wordLabel.setText(english); contextLabel.setText(context);
     }
-
-    public void clearAnswer() {
-        answerField.setText("");
-    }
-
+    public void clearAnswer() { answerField.setText(""); }
     public void enableInput(boolean enable) {
-        answerField.setEnabled(enable);
-        submitButton.setEnabled(enable);
+        answerField.setEnabled(enable); submitButton.setEnabled(enable);
         if (enable) answerField.requestFocusInWindow();
     }
-
     public void updateTimer(int seconds) {
         timerLabel.setText("Время: " + seconds + " сек");
         timerLabel.setForeground(seconds <= 10 ? Color.RED : Color.BLACK);
     }
-
-    public void updateScore(int correct, int wrong) {
-        scoreLabel.setText(correct + " | " + wrong);
-    }
-
+    public void updateScore(int correct, int wrong) { scoreLabel.setText(correct + " | " + wrong); }
     public void showLevelResults(int correct, int wrong, int timeUsed) {
         showResultMode();
         valCorrect.setText(String.valueOf(correct));
         valWrong.setText(String.valueOf(wrong));
         valTime.setText(timeUsed + " сек");
     }
-
-    public String getUserAnswer() {
-        return answerField.getText().trim();
-    }
+    public String getUserAnswer() { return answerField.getText().trim(); }
 
     public JButton getStartButton() { return startButton; }
     public JButton getSubmitButton() { return submitButton; }

@@ -10,12 +10,13 @@ public class LevelHistoryPanel extends JPanel {
     private final JTable historyTable;
 
     private static final String[] COLUMNS = {
-            "Уровень", "Правильно", "Ошибок", "Время", "Результат"
+            "Уровень", "✓", "✕", "Время", "Результат"
     };
 
     public LevelHistoryPanel() {
         setLayout(new BorderLayout());
-        setPreferredSize(new Dimension(250, 0)); // Ширина 250px
+        setMinimumSize(new Dimension(260, 100));
+        setPreferredSize(new Dimension(260, 0));
         setBorder(BorderFactory.createTitledBorder("История уровней"));
 
         tableModel = new DefaultTableModel(COLUMNS, 0) {
@@ -26,16 +27,20 @@ public class LevelHistoryPanel extends JPanel {
         };
 
         historyTable = new JTable(tableModel);
-        historyTable.setRowHeight(25);
-        historyTable.getColumnModel().getColumn(0).setPreferredWidth(50);
-        historyTable.getColumnModel().getColumn(1).setPreferredWidth(60);
-        historyTable.getColumnModel().getColumn(2).setPreferredWidth(60);
-        historyTable.getColumnModel().getColumn(3).setPreferredWidth(60);
-        historyTable.getColumnModel().getColumn(4).setPreferredWidth(80);
+        historyTable.setRowHeight(28);
+        historyTable.setFillsViewportHeight(true);
+        historyTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
 
-        add(new JScrollPane(historyTable), BorderLayout.CENTER);
+        historyTable.getColumnModel().getColumn(0).setPreferredWidth(60);
+        historyTable.getColumnModel().getColumn(1).setPreferredWidth(25);
+        historyTable.getColumnModel().getColumn(2).setPreferredWidth(25);
+        historyTable.getColumnModel().getColumn(3).setPreferredWidth(55);
+        historyTable.getColumnModel().getColumn(4).setPreferredWidth(90);
+
+        JScrollPane scroll = new JScrollPane(historyTable);
+        scroll.setBorder(BorderFactory.createEmptyBorder(2, 4, 4, 4));
+        add(scroll, BorderLayout.CENTER);
     }
-
 
     public void addLevelResult(int levelNum, int correct, int wrong, int timeSec, String date) {
         tableModel.addRow(new Object[]{

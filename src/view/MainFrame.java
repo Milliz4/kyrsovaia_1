@@ -1,12 +1,9 @@
-package gui;
+package view;
 
 import controller.VocabularyController;
 import controller.GameController;
 import controller.StatisticsController;
 import db.DBManager;
-import view.VocabularyView;
-import view.StatisticsView;
-import view.GameView;
 
 import javax.swing.*;
 import java.awt.*;
@@ -23,15 +20,16 @@ public class MainFrame extends JFrame {
 
         VocabularyView vocabView = new VocabularyView();
         VocabularyController vocabController = new VocabularyController(vocabView, DBManager.getInstance());
-        tabbedPane.addTab("Словарь", vocabView);
-        vocabView.loadAllWords(DBManager.getInstance().getAllWords());
 
         GameView gameView = new GameView();
         new GameController(gameView, DBManager.getInstance(), vocabController, vocabView);
         tabbedPane.addTab("Уровни", gameView);
 
+        tabbedPane.addTab("Словарь", vocabView);
+        vocabView.loadAllWords(DBManager.getInstance().getAllWords());
+
         StatisticsView statsView = new StatisticsView();
-        new StatisticsController(statsView, DBManager.getInstance()); // <-- Создаём контроллер
+        new StatisticsController(statsView, DBManager.getInstance());
         tabbedPane.addTab("Статистика", statsView);
 
         add(tabbedPane, BorderLayout.CENTER);

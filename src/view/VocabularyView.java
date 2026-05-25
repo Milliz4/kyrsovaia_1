@@ -10,7 +10,7 @@ import java.util.List;
 public class VocabularyView extends JPanel {
     private final DefaultTableModel tableModel;
     private final JTable vocabularyTable;
-    private final JButton addBtn, editBtn, deleteBtn;
+    private final JButton addBtn, editBtn, deleteBtn, importBtn;
 
     private static final String[] COLUMNS = {
             "ID", "English", "Russian", "Контекст", "Уровень SRS", "След. повтор"
@@ -40,11 +40,13 @@ public class VocabularyView extends JPanel {
         addBtn = new JButton(" Добавить");
         editBtn = new JButton(" Редактировать");
         deleteBtn = new JButton("️Удалить");
+        importBtn = new JButton("Импорт из txt");
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(addBtn);
         buttonPanel.add(editBtn);
         buttonPanel.add(deleteBtn);
+        buttonPanel.add(importBtn);
         add(buttonPanel, BorderLayout.SOUTH);
     }
 
@@ -115,4 +117,6 @@ public class VocabularyView extends JPanel {
                 (String) tableModel.getValueAt(row, 5)
         );
     }
+    public JButton getImportButton() { return importBtn; }
+
 }

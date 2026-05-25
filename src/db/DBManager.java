@@ -364,4 +364,29 @@ public class DBManager {
             e.printStackTrace();
         }
     }
+
+    public boolean importWords(List<VocabularyItem> words) {
+        String sql = "INSERT INTO vocabulary (english, russian, context_sentence, box_level, next_review_date) VALUES (?, ?, ?, 1, ?)";
+        try {
+            connection.setAutoCommit(false);
+            try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+                for (VocabularyItem w : words) {
+                    pstmt.setString(1, w.getEnglish());
+                    pstmt.setString(2, w.getRussian());
+                    pstmt.setString(3, w.getContextSentence() != null ? w.getContextSentence() : "");
+                    pstmt.setString(4, LocalDate.now().toString());
+                    pstmt.addBatch();
+                }
+                pstmt.executeBatch();
+                connection.commit();
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            try { connection.setAutoCommit(true); } catch (SQLException e) { e.printStackTrace(); }
+        }
+    }
 }

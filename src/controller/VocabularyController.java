@@ -24,6 +24,7 @@ public class VocabularyController {
         view.getAddButton().addActionListener(e -> addWord());
         view.getEditButton().addActionListener(e -> editWord());
         view.getDeleteButton().addActionListener(e -> deleteWord());
+        view.getImportButton().addActionListener(e -> importFromCsv());
     }
 
     private void addWord() {
@@ -139,5 +140,62 @@ public class VocabularyController {
         if (boxLevel < 1) boxLevel = 1;
         if (boxLevel > 5) boxLevel = 5;
         return LocalDate.now().plusDays(intervals[boxLevel - 1]).format(DATE_FORMAT);
+    }
+
+    private void importFromCsv() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("txt файлы", "txt"));
+
+        if (fileChooser.showOpenDialog(view) == JFileChooser.APPROVE_OPTION) {
+            java.io.File file = fileChooser.getSelectedFile();
+            java.util.List<VocabularyItem> words = new java.util.ArrayList<>();
+            int lineCount = 0;
+            int errorCount = 0;
+
+            try (java.io.BufferedReader br = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(new java.io.FileInputStream(file), java.nio.charset.StandardCharsets.UTF_8))) {
+
+                String line;
+                br.readLine();
+
+                while ((line = br.readLine()) != null) {
+                    line = line.trim();
+                    if (line.isEmpty()) continue;
+
+                    String[] parts = line.split(",", -1);
+                    if (parts.length >= 2) {
+                        String eng = parts[0].trim();
+                        String rus = parts[1].trim();
+                        String ctx = parts.length > 2 ? parts[2].trim() : "";
+
+                        if (!eng.isEmpty() && !rus.isEmpty()) {
+                            words.add(new VocabularyItem(eng, rus, ctx));
+                            lineCount++;
+                        } else {
+                            errorCount++;
+                        }
+                    } else {
+                        errorCount++;
+                    }
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(view, "Ошибка чтения файла:\n" + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            if (words.isEmpty()) {
+                JOptionPane.showMessageDialog(view, "В файле не найдено корректных слов.", "Внимание", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            if (dbManager.importWords(words)) {
+                view.loadAllWords(dbManager.getAllWords());
+                JOptionPane.showMessageDialog(view,
+                        "Успешно импортировано: " + lineCount + " слов.\nПропущено строк: " + errorCount,
+                        "Импорт завершён", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(view, "Ошибка при сохранении в базу данных!", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

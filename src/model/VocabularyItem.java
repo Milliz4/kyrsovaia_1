@@ -27,6 +27,22 @@ public class VocabularyItem {
         this.boxLevel = 1;
         this.nextReviewDate = java.time.LocalDate.now().toString();
     }
+
+    public static String validate(String english, String russian) {
+        if (english == null || english.trim().isEmpty()) {
+            return "Слово на английском не может быть пустым";
+        }
+        if (russian == null || russian.trim().isEmpty()) {
+            return "Перевод не может быть пустым";
+        }
+        if (english.length() > 100 || russian.length() > 100) {
+            return "Слово не должно превышать 100 символов";
+        }
+        if (!english.matches("^[a-zA-Z\\s\\-']+$")) {
+            return "Английское слово должно содержать только буквы";
+        }
+        return null;
+    }
     
     public int getId() { return id; }
     public void setId(int id) { this.id = id; }

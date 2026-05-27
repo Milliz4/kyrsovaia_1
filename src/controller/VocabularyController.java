@@ -34,6 +34,12 @@ public class VocabularyController {
         String russian = JOptionPane.showInputDialog(view, "Русский перевод:");
         if (russian == null || russian.trim().isEmpty()) return;
 
+        String error = VocabularyItem.validate(english, russian);
+        if (error != null) {
+            JOptionPane.showMessageDialog(view, error, "Ошибка ввода", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         String context = JOptionPane.showInputDialog(view, "Пример предложения (контекст):");
 
         VocabularyItem newWord = new VocabularyItem(
@@ -133,7 +139,6 @@ public class VocabularyController {
             }
         }
     }
-
 
     public static String calculateNextReviewDate(int boxLevel) {
         int[] intervals = {1, 3, 7, 14, 30};

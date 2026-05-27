@@ -141,7 +141,12 @@ public class GameController {
 
     private void checkAnswer() {
         String userAnswer = view.getUserAnswer().toLowerCase().trim();
-        if (userAnswer.isEmpty()) return;
+
+        if (userAnswer.isEmpty()) {
+            JOptionPane.showMessageDialog(view, "Введите ответ!", "Внимание", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (currentWordInLevel >= levels.get(currentLevelIndex).size()) {
             return;
         }

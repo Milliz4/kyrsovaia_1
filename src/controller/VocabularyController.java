@@ -135,11 +135,12 @@ public class VocabularyController {
     }
 
 
-    public String calculateNextReviewDate(int boxLevel) {
+    public static String calculateNextReviewDate(int boxLevel) {
         int[] intervals = {1, 3, 7, 14, 30};
         if (boxLevel < 1) boxLevel = 1;
         if (boxLevel > 5) boxLevel = 5;
-        return LocalDate.now().plusDays(intervals[boxLevel - 1]).format(DATE_FORMAT);
+        return LocalDate.now().plusDays(intervals[boxLevel - 1])
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
     private void importFromCsv() {

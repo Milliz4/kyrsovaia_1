@@ -17,8 +17,8 @@ public class StatisticsView extends JPanel {
 
     private static final Color[] SRS_COLORS = {
             new Color(220, 38, 38),
-            new Color(234, 179, 8),
-            new Color(217, 119, 6),
+            new Color(250, 109, 8),
+            new Color(210, 199, 6),
             new Color(34, 197, 94),
             new Color(22, 163, 74)
     };

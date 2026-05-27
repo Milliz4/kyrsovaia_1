@@ -4,7 +4,6 @@ import controller.VocabularyController;
 import controller.GameController;
 import controller.StatisticsController;
 import db.DBManager;
-import service.ReminderService;
 
 import javax.swing.*;
 import java.awt.*;
